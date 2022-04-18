@@ -1,0 +1,218 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "debian-openssl-1.1.x"]
+}
+
+// models
+
+model Member {
+  user_id BigInt @id @unique
+
+  email       String?
+  otp         Int?
+  has_left    Boolean @default(false)
+  is_verified Boolean @default(false)
+
+  user_name     String?
+  nickname      String?
+  discriminator String?
+  status        String  @default("offline")
+  state         String?
+
+  member_log       MemberLog[]
+  MemberStatus     MemberStatusLog[]
+  TicTacToeTracker TicTacToeTracker[]
+  MemberClear      MemberClear[]
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@map("members")
+}
+
+model MemberLog {
+  id Int @id @default(autoincrement())
+
+  avatar        String?
+  avatar_url    String?
+  user_name     String
+  nickname      String?
+  discriminator String?
+
+  member    Member @relation(fields: [member_id], references: [user_id])
+  member_id BigInt
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@map("member_logs")
+}
+
+model MemberStatusLog {
+  id Int @id @default(autoincrement())
+
+  status String
+  state  String?
+
+  member    Member @relation(fields: [member_id], references: [user_id])
+  member_id BigInt
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@map("member_status_logs")
+}
+
+model MessageLog {
+  message_id BigInt @id @unique
+
+  created    BigInt
+  channel_id BigInt
+  user_id    BigInt
+  user_name  String
+  is_dm      Boolean
+  is_bot     Boolean @default(false)
+  is_deleted Boolean @default(false)
+  is_edited  Boolean @default(false)
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@map("message_logs")
+}
+
+model CommandLog {
+  message_id BigInt @id @unique
+
+  user_id   BigInt
+  user_name String
+  prefix    String  @db.Char(1)
+  command   String
+  success   Boolean @default(true)
+  reason    String?
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@map("command_logs")
+}
+
+model Statistic {
+  event String @unique
+
+  count Int
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@map("statistics")
+}
+
+model FlagLog {
+  message_id BigInt @id @unique
+
+  user_id   BigInt
+  user_name String
+  flag      String
+  success   Boolean @default(true)
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@map("flag_logs")
+}
+
+model TicTacToeTracker {
+  id Int @id @default(autoincrement())
+
+  member    Member     @relation(fields: [member_id], references: [user_id])
+  member_id BigInt
+  winner    EntityType
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@map("tic_tac_toe_tracker")
+}
+
+model DefconLevel {
+  id Int @id @default(autoincrement())
+
+  level Int
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@map("defcon_levels")
+}
+
+model BotActivityTracker {
+  id Int @id @default(autoincrement())
+
+  activity String
+  type String
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@map("bot_activites")
+}
+
+model PasswordChallenge {
+  name String @unique
+
+  PasswordChallengeClears PasswordClear[]
+  MemberClear             MemberClear[]
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@map("password_challenges")
+}
+
+model PasswordClear {
+  id Int @id @default(autoincrement())
+
+  challenge      PasswordChallenge @relation(fields: [challenge_name], references: [name])
+  challenge_name String
+
+  password    String
+  MemberClear MemberClear[]
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@map("password_clears")
+}
+
+model MemberClear {
+
+  id Int @id @default(autoincrement())
+
+  member    Member @relation(fields: [member_id], references: [user_id])
+  member_id BigInt
+
+  password    PasswordClear @relation(fields: [password_id], references: [id])
+  password_id Int
+
+  challenge      PasswordChallenge @relation(fields: [challenge_name], references: [name])
+  challenge_name String
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@map("member_clears")
+}
+
+enum EntityType {
+  user
+  bot
+}

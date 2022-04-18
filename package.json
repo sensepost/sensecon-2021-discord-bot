@@ -1,0 +1,43 @@
+{
+  "scripts": {
+    "lint": "eslint . --ext .ts",
+    "build": "prisma generate && tsc",
+    "watch": "tsc -w",
+    "start": "node dist/index.js"
+  },
+  "devDependencies": {
+    "@types/node": "^16.9.1",
+    "@types/node-schedule": "^1.3.2",
+    "@typescript-eslint/eslint-plugin": "^4.29.1",
+    "@typescript-eslint/parser": "^4.29.1",
+    "eslint": "^7.32.0",
+    "prisma": "^3.0.1",
+    "ts-node": "^10.2.1"
+  },
+  "engines": {
+    "node": ">=16"
+  },
+  "prisma": {
+    "seed": "ts-node prisma/seed.ts"
+  },
+  "dependencies": {
+    "@discordjs/builders": "^0.5.0",
+    "@discordjs/rest": "^0.1.0-canary.0",
+    "@prisma/client": "^3.0",
+    "aws-sdk": "^2.985.0",
+    "bufferutil": "^4.0.3",
+    "chalk": "^4.1.2",
+    "discord-api-types": "^0.22.0",
+    "discord.js": "^13.1.0",
+    "dotenv": "^10.0.0",
+    "dotenv-expand": "^5.1.0",
+    "gm": "^1.23.1",
+    "got": "^11.8.2",
+    "node-cache": "^5.1.2",
+    "node-fetch": "^3.0.0",
+    "node-schedule": "^2.0.0",
+    "pretty-ms": "^7.0.1",
+    "shlex": "^2.1.0",
+    "steggy": "^2.0.1"
+  }
+}

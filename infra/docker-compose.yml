@@ -1,0 +1,89 @@
+version: "3"
+services:
+
+  mysql:
+    image: mysql:8
+    environment:
+      - MYSQL_DATABASE=dbot
+      - MYSQL_ROOT_PASSWORD=${DATABASE_PASSWORD}
+    volumes:
+      - ./mysql-data:/var/lib/mysql
+    restart: unless-stopped
+    labels:
+      - "traefik.enable=true"
+      - "traefik.tcp.routers.3306-tcp.rule=HostSNI(`*`)"
+      - "traefik.tcp.routers.3306-tcp.entrypoints=3306-tcp"
+      - "traefik.tcp.routers.3306-tcp.service=mysql-3306-tcp"
+      - "traefik.tcp.services.mysql-3306-tcp.loadbalancer.server.port=3306"
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    environment:
+      - GF_SERVER_ROOT_URL=https://grafana.${TRAEFIK_DOMAIN}/
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASS}
+    user: "1000"
+    volumes:
+      - grafana-storage:/var/lib/grafana
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.grafana.rule=Host(`grafana.${TRAEFIK_DOMAIN}`)"
+      - "traefik.http.routers.grafana.entrypoints=web-secure"
+      - "traefik.http.routers.grafana.tls.certResolver=primary"
+    restart: unless-stopped
+
+  netdata:
+    image: netdata/netdata
+    hostname: netdata.${TRAEFIK_DOMAIN}
+    environment:
+      - DO_NOT_TRACK=1
+      - PGID=${DOCKER_GID}
+    volumes:
+      - netdataconfig:/etc/netdata
+      - netdatalib:/var/lib/netdata
+      - netdatacache:/var/cache/netdata
+      - /etc/passwd:/host/etc/passwd:ro
+      - /etc/group:/host/etc/group:ro
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /etc/os-release:/host/etc/os-release:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    cap_add:
+      - SYS_PTRACE
+    security_opt:
+      - apparmor:unconfined
+    restart: unless-stopped
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.netdata.rule=Host(`netdata.${TRAEFIK_DOMAIN}`)"
+      - "traefik.http.routers.netdata.entrypoints=web-secure"
+      - "traefik.http.routers.netdata.tls.certResolver=primary"
+
+  traefik:
+    image: traefik:2.5
+    command:
+      - --log.level=INFO
+      - --api.dashboard=true
+      - --providers.docker
+      - --providers.docker.exposedByDefault=false
+      # Web
+      - --entryPoints.web-secure.address=:443
+      # MySQL
+      - --entryPoints.3306-tcp.address=:3306
+      # ACME
+      - --certificatesResolvers.primary.acme.email=${ACME_EMAIL}
+      - --certificatesResolvers.primary.acme.storage=acme.json
+      - --certificatesresolvers.primary.acme.tlschallenge=true
+    ports:
+      - "443:443"
+      - "127.0.0.1:3306:3306"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./acme.json:/acme.json
+    restart: unless-stopped
+
+volumes: 
+  grafana-storage:
+  netdataconfig:
+  netdatalib:
+  netdatacache:

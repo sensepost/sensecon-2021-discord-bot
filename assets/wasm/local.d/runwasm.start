@@ -1,0 +1,15 @@
+#!/bin/sh
+
+# workdir
+cd /etc/local.d
+
+# wait for the user wasm to become available
+while [ ! -f /mnt/user.wasm ]; do sleep 1; done
+
+# just continue to run the wasm file we got, every $x seconds
+
+while true
+do
+    node main.js
+    sleep 30
+done > /dev/ttyS0 &
